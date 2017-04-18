@@ -14,14 +14,14 @@ helpers do
 		Integer(iso) rescue (DateTime.strptime(iso, '%Y-%m-%d')+1).to_i
 	end
 	#Collate a list of device_id/ping hashes to a hash of device_id to list of pings
-	def collate_pings(list_obj)
+	def collate_pings(list_ping_hash)
 		collated_pings = {}
-		list_obj.each do |element|
-			device_id = element["device_ID"]
+		list_ping_hash.each do |ping_hash|
+			device_id = ping_hash["device_ID"]
 			if collated_pings[device_id] == nil
-				collated_pings.store(device_id,[element["time"]])
+				collated_pings.store(device_id,[ping_hash["time"]])
 			else
-				collated_pings[device_id] << element["time"]
+				collated_pings[device_id] << ping_hash["time"]
 			end
 		end
 		return collated_pings
@@ -52,15 +52,13 @@ end
 get '/all/:date' do
 	from =  iso_to_posix(params[:date])
 	to = iso_to_posix_exclusive(params[:date])
-	pings = collate_pings(Pings.where('time >= '+from.to_s).where('time < '+to.to_s))
-	pings.to_json
+	collate_pings(Pings.where('time >= '+from.to_s).where('time < '+to.to_s)).to_json
 end
 
 get '/all/:from/:to' do
 	from =  iso_to_posix(params[:from])
 	to =  iso_to_posix_exclusive(params[:to])
-	pings = collate_pings(Pings.where('time >= '+from.to_s).where('time < '+to.to_s))
-	pings.to_json
+	collate_pings(Pings.where('time >= '+from.to_s).where('time < '+to.to_s)).to_json
 end
 
 get '/:deviceID/:date' do
@@ -74,4 +72,3 @@ get '/:deviceID/:from/:to' do
 	to =  iso_to_posix_exclusive(params[:to])
 	Pings.where(device_ID: params[:deviceID]).where('time >= '+from.to_s).where('time < '+to.to_s).pluck(:time).to_json
 end
-
